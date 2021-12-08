@@ -41,19 +41,12 @@ const App = observer(function App() {
 	
 	return (
 		<div className="App">
-				<Switch>
-					<Route path={`${process.env.REACT_APP_IDE_URL}/reset`} >
-						<ResetPassword />
-					</Route>
-					<Route path={[`${process.env.REACT_APP_IDE_URL}/:queryurl`, `${process.env.REACT_APP_IDE_URL}`]} >
-						<ModalWindow />
-						<ControlPanel />
-						<div className="content flex">
-							{showSideBar && <GalleryComponent />}
-							<GraphqlExplorer />
-						</div>
-					</Route>
-				</Switch>
+			{/*<ModalWindow />*/}
+			{/*<ControlPanel />*/}
+			<div className="content flex">
+				{showSideBar && <GalleryComponent />}
+				<GraphqlExplorer />
+			</div>
 		</div>
 	)
 })

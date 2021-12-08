@@ -1,90 +1,51 @@
-const express = require('express')
-require('dotenv').config()
-const path = require('path')
-const fs = require('fs')
-const cors = require('cors')
-const mysql = require('mysql')
-const dbconfig = require('./databaseConfig')
-const db = mysql.createPool({
-	...dbconfig.connection,
-	'connectionLimit': 100,
-	'database': dbconfig.database
-})
-const app = express()
-const bodyParser = require('body-parser')
-const passport = require('passport')
-const defaultmeta = require('./defaultMeta')
-app.use(bodyParser.json())
-app.use(express.static(path.join(__dirname, '../../build')))
-app.use(cors())
-const redis = require('redis')
-const session = require('express-session')
-let RedisStore = require('connect-redis')(session)
-let redisClient = redis.createClient()
-app.use(
-  session({
-    store: new RedisStore({ client: redisClient }),
-    saveUninitialized: false,
-    secret: process.env.CAT,
-    resave: false,
-  })
-)
-app.use(passport.initialize());
-app.use(passport.session());
-app.enable('trust proxy');
+var express = require('express');
+var request = require('request');
+var cors = require('cors');
+var chalk = require('chalk');
+var proxy = express();
 
-require('./passport')(passport, db)
-require('./endPoints')(app, passport, db, redisClient)
+var startProxy = function(port, credentials, origin) {
+	proxy.use(cors({credentials: credentials, origin: origin}));
+	proxy.options('*', cors({credentials: credentials, origin: origin}));
 
-if (process.env.NODE_ENV==='production') {
-	app.get('*', (req,res) => {
-		const url = req.url.substring(1)
-		const filePath = path.resolve(__dirname, '../../build', 'index.html')
-		const fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl
-		const replaceData = (data, meta) => {
-			return data
-				.replace(/__TITLE__/g, meta.title)
-				.replace(/__DESCRIPTION__/g, meta.description)
-				.replace(/__URL__/g, fullUrl)
-		}
-		if (url) {
-			fs.readFile(filePath, 'utf8', (err, data) => {
-				if (err) {
-					return console.log(err)
-				}
-				const sql = `SELECT * FROM queries WHERE url=?`
-				db.query(sql, [url], (err, result) => {
-					if (err) console.log(err)
-					if (!result?.length) {
-						data = replaceData(data, {
-							title: defaultmeta.title,
-							description: defaultmeta.description
-						})
-						res.send(data)
-					} else {
-						data = replaceData(data, {
-							title: result[0].name,
-							description: result[0].description ? result[0].description : defaultmeta.description
-						})
-						res.send(data)
+	// remove trailing slash
+	// remove all forward slashes
+
+	proxy.use('/' , function(req, res) {
+		const {url, ...q} = req.query
+
+		var cleanProxyUrl = url.replace(/\/$/, '');
+
+		try {
+			console.log(chalk.green('Request Proxied -> ' + req.url));
+		} catch (e) {}
+		req.pipe(
+			request(cleanProxyUrl )
+				.on('response', response => {
+					// In order to avoid https://github.com/expressjs/cors/issues/134
+					const accessControlAllowOriginHeader = response.headers['access-control-allow-origin']
+					if(accessControlAllowOriginHeader && accessControlAllowOriginHeader !== origin ){
+						console.log(chalk.blue('Override access-control-allow-origin header from proxified URL : ' + chalk.green(accessControlAllowOriginHeader) + '\n'));
+						response.headers['access-control-allow-origin'] = origin;
 					}
 				})
-			})
-		} else {
-			fs.readFile(filePath, 'utf8', (err, data) => {
-				if (err) {
-					return console.log(err)
-				}
-				data = replaceData(data, {
-					title: defaultmeta.title,
-					description: defaultmeta.description
-				})
-				res.send(data)
-			})
-		}
-	})
-} 
+		).pipe(res);
+	});
 
-app.listen(+process.env.PORT || 4000, () => {
-	console.log("Example app listening on port 4000")
-})
+	proxy.listen(port);
+
+	// Welcome Message
+	console.log(chalk.bgGreen.black.bold.underline('\n Proxy Active \n'));
+	console.log(chalk.blue('PORT: ' + chalk.green(port)));
+	console.log(chalk.blue('Credentials: ' + chalk.green(credentials)));
+	console.log(chalk.blue('Origin: ' + chalk.green(origin) + '\n'));
+	console.log(
+		chalk.cyan(
+			'To start using the proxy simply replace the proxied part of your url with: ' +
+			chalk.bold('http://localhost:' + port + '/'  + '\n')
+		)
+	);
+};
+
+
+startProxy(8010,  false, '*');

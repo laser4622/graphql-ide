@@ -244,7 +244,10 @@ const EditorInstance = observer(function EditorInstance({number})  {
 				saved: currentQuery.id && true
 			}, index)
 		}
-		fetcher({query: currentQuery.query, variables: currentQuery.variables}).then(data => {
+
+		let temp = currentQuery.variables !== '{}'
+		debugger
+		fetcher({query: currentQuery.query, variables: temp?currentQuery.variables:null}).then(data => {
 			data.json().then(json => {
 				let values = null
 				if ('data' in json) {
@@ -322,16 +325,15 @@ const EditorInstance = observer(function EditorInstance({number})  {
 		}
 	}
 	const fetcher = (graphQLParams) => {
-		let key = user ? user.key : process.env.REACT_APP_IDE_GUEST_API_KEY
-		let keyHeader = {'X-API-KEY': key}
+		debugger
+
 		return fetch(
-			currentQuery.endpoint_url,
+			`http://localhost:8010?url=${encodeURI(currentQuery.endpoint_url)}`,
 			{
 				method: 'POST',
 				headers: {
 					Accept: 'application/json',
 					'Content-Type': 'application/json',
-					...keyHeader
 				},
 				body: JSON.stringify(graphQLParams),
 				credentials: 'same-origin',
@@ -339,7 +341,9 @@ const EditorInstance = observer(function EditorInstance({number})  {
 		)
 	}
 	useEffect(() => {
-		if (number === index && user !== null) {
+
+
+		if (number === index) {
 			const fetchSchema = () => {
 				setLoading(true)
 				let introspectionQuery = getIntrospectionQuery()
@@ -347,11 +351,13 @@ const EditorInstance = observer(function EditorInstance({number})  {
 				let introspectionQueryName = staticName
 				let graphQLParams = {
 					query: introspectionQuery,
-					operationName: introspectionQueryName,
+					operationName: introspectionQueryName
 				}
+
 				fetcher(graphQLParams)
 				.then(response => response.json())
 				.then(result => {
+
 					if (typeof result !== 'string' && 'data' in result) {
 						let schema = buildClientSchema(result.data)
 						setSchema(schema)

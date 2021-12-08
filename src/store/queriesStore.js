@@ -55,13 +55,15 @@ class Queries {
 		variables: '{}',
 		data_type: 'response',
 		config: {},
-		endpoint_url: 'https://graphql.bitquery.io',
+		// endpoint_url: 'http://localhost:8010?url=https%3A%2F%2Fswapi-graphql.netlify.app%2F.netlify%2Ffunctions%2Findex',
+		endpoint_url: 'https://swapi-graphql.netlify.app/.netlify/functions/index',
 		id: null
 	}
 	dashboardQuery = this.currentQuery
 	query = [this.currentQuery]
 	
 	constructor() {
+
 		makeObservable(this, {
 			queryIsTransfered: observable,
 			sharedQueries: observable,
@@ -119,6 +121,7 @@ class Queries {
 	setSchema = schema => this.schema = schema
 	setMobile = (mobile) => this.isMobile = mobile
 	setQuery = (params, id) => {
+
 		this.query.push({ id: id ? id : null })
 		this.query[this.query.length-1].data_type = 'response'
 		if (this.query[this.query.length-1].id && !('saved' in params)) 
@@ -165,6 +168,8 @@ class Queries {
 		this.query[index].id = id || id===null ? id : this.query[index].id
 		this.query[index].saved = false
 		if (params.saved) this.query[index].saved = params.saved
+
+
 		this.setCurrentQuery(index)
 	}
 	removeQuery = index => {
@@ -179,6 +184,7 @@ class Queries {
 		setTimeout(() => window.dispatchEvent(new Event('resize')), 0)
 	}
 	setCurrentQuery = (id) => {
+
 		this.currentQuery = {...this.query[id]}
 		this.currentQuery.widget_id === this.defaultWidget
 			? TabsStore.toggleMode('json')
