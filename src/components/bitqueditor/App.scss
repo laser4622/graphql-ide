@@ -223,6 +223,11 @@ button.columns_number {
 .variable-editor {
   display: flex;  
   flex: 1 1;
+  overflow: hidden;
+}
+.CodeMirror-hints.graphiql {
+  position: fixed;
+  transform: translate(300px, 100px);
 }
 .variable-editor>.CodeMirror {
   height: auto !important;
