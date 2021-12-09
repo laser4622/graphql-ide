@@ -5,7 +5,7 @@ import { getValueFrom } from '../../../utils/common'
 import { useFirstUpdate } from '../../../utils/useFirstUpdate'
 
 const DisplayedData = observer(function DisplayedData({model, dataWidgets, setDataIndexInModel, dataSource, setDataSource, plugins, number}) {
-	const { updateQuery, currentQuery, defaultWidget } = QueriesStore
+	const { updateQuery, currentQuery } = QueriesStore
 	const { index } = TabsStore
 	const onChangeHandle = (value, i) => {
 		updateQuery({displayed_data: value}, index)
@@ -42,7 +42,7 @@ const DisplayedData = observer(function DisplayedData({model, dataWidgets, setDa
 			!Object.keys(model)[Object.keys(model).length-1].includes('.') &&
 			updateQuery({
 				displayed_data: Object.keys(model)[Object.keys(model).length-1],
-				widget_id: defaultWidget,
+				widget_id: 'json.widget',
 				saved: currentQuery.id && true
 			}, index)
 		}

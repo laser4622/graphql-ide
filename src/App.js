@@ -1,8 +1,6 @@
 import React from 'react'
 import './App.scss'
 import GalleryComponent from './components/GalleryComponent'
-import { useEffect } from 'react'
-import { QueriesStore } from './store/queriesStore'
 import { GraphqlExplorer } from './components/GraphqlExplorer'
 import { observer } from 'mobx-react-lite'
 import 'react-grid-layout/css/styles.css'
@@ -18,29 +16,11 @@ if (process.env.NODE_ENV === 'development') {
   }
 
 const App = observer(function App() {
-	const { query, showSideBar } = QueriesStore
-	useEffect(() => {
-		const handleUnload = e => {
-			for (let i=0; i<query.length; i++) {
-				if ('saved' in query[i] && !query[i].saved) {
-					e.preventDefault()
-					e.returnValue = ''
-				}
-			}
-		}
-		window.addEventListener('beforeunload', handleUnload)
-		return () => {
-			window.removeEventListener('beforeunload', handleUnload)
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [])
 	
 	return (
 		<div className="App">
-			{/*<ModalWindow />*/}
-			{/*<ControlPanel />*/}
 			<div className="content flex">
-				{showSideBar && <GalleryComponent />}
+				<GalleryComponent />
 				<GraphqlExplorer />
 			</div>
 		</div>

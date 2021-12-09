@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-export default (value, timeout) => {
+const useDebounce = (value, timeout) => {
     const [state, setState] = useState(value);
 
     useEffect(() => {
@@ -11,3 +11,5 @@ export default (value, timeout) => {
 
     return state;
 }
+
+export default useDebounce

@@ -111,8 +111,6 @@ type Props = {
   getDefaultFieldNames?: ?(type: GraphQLObjectType) => Array<string>,
   getDefaultScalarArgValue?: ?GetDefaultScalarArgValue,
   makeDefaultArg?: ?MakeDefaultArg,
-  onToggleExplorer: () => void,
-  onToggleSideBar: () => void,
   explorerIsOpen: boolean,
   onRunOperation?: (name: ?string) => void,
   colors?: ?Colors,
@@ -141,9 +139,6 @@ type Selections = $ReadOnlyArray<SelectionNode>;
 
 type AvailableFragments = {[key: string]: FragmentDefinitionNode};
 
-function capitalize(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-}
 
 // Names match class names in graphiql app.css
 // https://github.com/graphql/graphiql/blob/master/packages/graphiql/css/app.css
@@ -2198,11 +2193,8 @@ class RootView extends React.PureComponent<
     const rootViewElId = this._rootViewElId();
 
     const fields = this.props.fields || {};
-    const operationDef = definition;
-    const selections = operationDef.selectionSet.selections;
+    const selections = definition.selectionSet.selections;
 
-    const operationDisplayName =
-      this.props.name || `${capitalize(operationType)} Name`;
 
     return (
       <div
@@ -2459,110 +2451,6 @@ class Explorer extends React.PureComponent<Props, State> {
         definitions: newDefinitions,
       };
     };
-
-    const addOperation = (kind: NewOperationType) => {
-      const existingDefs = parsedQuery.definitions;
-
-      const viewingDefaultOperation =
-        parsedQuery.definitions.length === 1 &&
-        parsedQuery.definitions[0] === DEFAULT_DOCUMENT.definitions[0];
-
-      const MySiblingDefs = viewingDefaultOperation
-        ? []
-        : existingDefs.filter(def => {
-            if (def.kind === 'OperationDefinition') {
-              return def.operation === kind;
-            } else {
-              // Don't support adding fragments from explorer
-              return false;
-            }
-          });
-
-      const newOperationName = `My${capitalize(kind)}${
-        MySiblingDefs.length === 0 ? '' : MySiblingDefs.length + 1
-      }`;
-
-      // Add this as the default field as it guarantees a valid selectionSet
-      const firstFieldName = '__typename # Placeholder value';
-
-      const selectionSet = {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: {
-              kind: 'Name',
-              value: firstFieldName,
-              loc: null,
-            },
-            arguments: [],
-            directives: [],
-            selectionSet: null,
-            loc: null,
-          },
-        ],
-        loc: null,
-      };
-
-      const newDefinition = {
-        kind: 'OperationDefinition',
-        operation: kind,
-        name: {kind: 'Name', value: newOperationName},
-        variableDefinitions: [],
-        directives: [],
-        selectionSet: selectionSet,
-        loc: null,
-      };
-
-      const newDefinitions =
-        // If we only have our default operation in the document right now, then
-        // just replace it with our new definition
-        viewingDefaultOperation
-          ? [newDefinition]
-          : [...parsedQuery.definitions, newDefinition];
-
-      const newOperationDef = {
-        ...parsedQuery,
-        definitions: newDefinitions,
-      };
-
-      this.setState({operationToScrollTo: `${kind}-${newOperationName}`});
-
-      this.props.onEdit(print(newOperationDef));
-    };
-
-    const actionsOptions = [
-      !!queryFields ? (
-        <option
-          key="query"
-          className={'toolbar-button'}
-          style={styleConfig.styles.buttonStyle}
-          type="link"
-          value={('query': NewOperationType)}>
-          Query
-        </option>
-      ) : null,
-      !!mutationFields ? (
-        <option
-          key="mutation"
-          className={'toolbar-button'}
-          style={styleConfig.styles.buttonStyle}
-          type="link"
-          value={('mutation': NewOperationType)}>
-          Mutation
-        </option>
-      ) : null,
-      !!subscriptionFields ? (
-        <option
-          key="subscription"
-          className={'toolbar-button'}
-          style={styleConfig.styles.buttonStyle}
-          type="link"
-          value={('subscription': NewOperationType)}>
-          Subscription
-        </option>
-      ) : null,
-    ].filter(Boolean);
 
     const actionsEl = null 
 

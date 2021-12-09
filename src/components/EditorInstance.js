@@ -20,7 +20,7 @@ import { visit } from 'graphql/language/visitor'
 import { parse as parseGql } from 'graphql/language'
 import JsonPlugin from './bitqueditor/components/JsonWidget'
 import ToolbarComponent from './bitqueditor/components/ToolbarComponent'
-import { TabsStore, QueriesStore } from '../store/queriesStore'
+import { QueriesStore } from '../store/queriesStore'
 import QueryErrorIndicator from './QueryErrorIndicator'
 import { getValueFrom, getLeft, getTop } from '../utils/common'
 import "react-loader-spinner/dist/loader/css/react-spinner-loader.css"
@@ -32,9 +32,7 @@ import { flattenData } from './flattenData.js'
 
 
 const EditorInstance = observer(function EditorInstance({number})  {
-	const { tabs, currentTab, index, jsonMode, codeMode } = TabsStore
-	const { query, updateQuery, currentQuery, isMobile,
-		setMobile, showSideBar, schema, setSchema, isLoaded } = QueriesStore
+	const { updateQuery, currentQuery, schema, setSchema } = QueriesStore
 	const [docExplorerOpen, toggleDocExplorer] = useState(false)
 	const [_variableToType, _setVariableToType] = useState(null)
 	const [loading, setLoading] = useState(false)
@@ -50,9 +48,9 @@ const EditorInstance = observer(function EditorInstance({number})  {
 	const variablesEditor = useRef(null)
 	const widgetDisplay = useRef(null)
 
-	useEffect(() => {
-		if (currentTab === tabs[number].id) window.dispatchEvent(new Event('resize'))
-	}, [currentTab, tabs, number])
+	// useEffect(() => {
+	// 	if (currentTab === tabs[number].id) window.dispatchEvent(new Event('resize'))
+	// }, [currentTab, tabs, number])
 	const setupExecButtonPosition = () => {
 		let execButt = workspace.current.offsetWidth / overwrap.current.offsetWidth
 		executeButton.current.setAttribute('style', `left: calc(${execButt*100}% - 25px);`)
@@ -204,15 +202,13 @@ const EditorInstance = observer(function EditorInstance({number})  {
 	}
 
 	useEffect(() => {
-		if (number === index && !currentQuery.saved) {
-			const model = getQueryTypes(query[index].query)
+		if (number === 0 && !currentQuery.saved) {
+			const model = getQueryTypes(currentQuery.query)
 			setQueryTypes(model)
 		}
 	}, [currentQuery.data_type,currentQuery.saved, dataSource.values])
 
 	const plugins = useMemo(()=> [JsonPlugin, tradingView,  ...vegaPlugins, ...graphPlugins, ...timeChartPlugins, tablePlugin], [])
-	let indexx = plugins.map(plugin => plugin.id).indexOf(currentQuery.widget_id)
-	const WidgetComponent = indexx>=0 ? plugins[indexx] : plugins[0]
 
 	const getResult = useCallback(() => {
 		ReactTooltip.hide(executeButton.current)
@@ -231,7 +227,7 @@ const EditorInstance = observer(function EditorInstance({number})  {
 				displayed_data,
 				widget_id: 'json.widget',
 				saved: currentQuery.id && true
-			}, index)
+			}, 0)
 		}
 
 		let temp = currentQuery.variables !== '{}'
@@ -261,7 +257,7 @@ const EditorInstance = observer(function EditorInstance({number})  {
 					query: toJS(currentQuery.query), 
 					variables: toJS(currentQuery.variables)
 				})
-				if (!('data' in json)) updateQuery({widget_id: 'json.widget'}, index)
+				if (!('data' in json)) updateQuery({widget_id: 'json.widget'}, 0)
 			})
 			
 			setLoading(false)
@@ -271,11 +267,10 @@ const EditorInstance = observer(function EditorInstance({number})  {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [JSON.stringify(currentQuery), schema, JSON.stringify(queryTypes)])
 	useEffect(() => {
-		number === index && console.log(!dataSource.values, !!currentQuery.query, !!currentQuery.saved, number === index, !!schema);
 		(!dataSource.values && 
 		currentQuery.query &&
 		currentQuery.saved &&
-		number === index &&
+		number === 0 &&
 		schema) && getResult()
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [schema])
@@ -295,10 +290,10 @@ const EditorInstance = observer(function EditorInstance({number})  {
 					&& setQueryTypes(queryType)
 			}
 		}
-		updateQuery({...handleSubject, url: null}, index, null)
+		updateQuery({...handleSubject, url: null}, 0, null)
 		setAccordance(false)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [schema, queryTypes, index])
+	}, [schema, queryTypes, 0])
 	const fetcher = (graphQLParams) => {
 
 		return fetch(
@@ -317,7 +312,7 @@ const EditorInstance = observer(function EditorInstance({number})  {
 	useEffect(() => {
 
 
-		if (number === index) {
+		if (number === 0) {
 			const fetchSchema = () => {
 				setLoading(true)
 				let introspectionQuery = getIntrospectionQuery()
@@ -350,10 +345,7 @@ const EditorInstance = observer(function EditorInstance({number})  {
 
 	return (
 		<div 
-			className={'graphiql__wrapper ' + 
-				(currentTab === tabs[number].id ? 'graphiql__wrapper_active' : '')
-				+ (!showSideBar ? ' graphiql__wrapper_wide' : '')
-			}
+			className="graphiql__wrapper graphiql__wrapper_active"
 		>
 			<ToolbarComponent 
 				queryEditor={queryEditor}
@@ -394,9 +386,9 @@ const EditorInstance = observer(function EditorInstance({number})  {
 				>
 					<GraphqlEditor
 						schema={schema}
-						query={query[number].query}
+						query={currentQuery.query}
 						number={number}
-						variables={query[number].variables}
+						variables={currentQuery.variables}
 						variableToType={_variableToType}
 						onRunQuery={getResult}
 						onEditQuery={editQueryHandler}
@@ -407,8 +399,7 @@ const EditorInstance = observer(function EditorInstance({number})  {
 						}}
 					/>
 				</div>
-				<div className={'widget-display widget-display-wrapper'+
-					(isMobile ? ' widget-display-wrapper-fullscreen' : '')}
+				<div className="widget-display widget-display-wrapper"
 					ref={widgetDisplay}
 				>
 					<div
@@ -422,10 +413,10 @@ const EditorInstance = observer(function EditorInstance({number})  {
 							removeError={setDataSource}
 						/>
 						<JsonPlugin.renderer
-							mode={jsonMode ? 'json' : codeMode ? 'code' : ''}
+							mode={'json'}
 							dataSource={dataSource}
 							displayedData={toJS(currentQuery.displayed_data)}
-							config={toJS(query[index].config)}
+							config={toJS(currentQuery.config)}
 						/>
 					</div>
 				</div>

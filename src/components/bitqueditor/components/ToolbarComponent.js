@@ -1,36 +1,13 @@
 import { observer } from 'mobx-react-lite'
-import { QueriesStore, TabsStore } from '../../../store/queriesStore'
-import modalStore from '../../../store/modalStore'
-import { useToasts } from 'react-toast-notifications'
+import { QueriesStore } from '../../../store/queriesStore'
 import { parse as parseGql } from 'graphql/language'
 import { print } from 'graphql'
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 
 const ToolbarComponent = observer(({ queryEditor, variablesEditor, docExplorerOpen, toggleDocExplorer}) => {
-	const { currentQuery, saveQuery, updateQuery, 
-		showSideBar, toggleSideBar, isLoaded, queryIsTransfered, setQueryIsTransfered } = QueriesStore
-	const { index } = TabsStore
-	const { toggleModal, toggleEditDialog, toggleDashboardSettings } = modalStore
-	const { addToast } = useToasts()
-	const [mode, setMode] = useState(false)
-	const [dashboardOwner,setOwner] = useState(false)
+	const { currentQuery, updateQuery} = QueriesStore
 	const handleInputURLChange = e => {
-		updateQuery({endpoint_url: e.target.value}, index)
-	}
-	const openDashboardSettings = () => {
-		toggleDashboardSettings()
-		toggleModal()
-	}
-	const switchView = () => {
-		const layout = currentQuery.layout ? null : {}
-		updateQuery({ layout, isDraggable: true, isResizable: true, name: !currentQuery.layout ? 'New Dashboard' : 'New Query' }, index)
-	}
-	const switchMode = () => {
-		setMode(!mode)
-		updateQuery({isDraggable: !currentQuery.isDraggable, isResizable: !currentQuery.isResizable}, index)
-	}
-	const saveHandle = () => {
-
+		updateQuery({endpoint_url: e.target.value}, 0)
 	}
 	const prettifyQuery = () => {
 		const editor = queryEditor.current.getEditor()
@@ -55,77 +32,43 @@ const ToolbarComponent = observer(({ queryEditor, variablesEditor, docExplorerOp
 		} catch {
 		}
 	}
-	useEffect(() => {
-		if (queryIsTransfered) {
-			prettifyQuery()
-			setQueryIsTransfered(false)
-		}
-	}, [queryIsTransfered, prettifyQuery])
-	const cancelHandle = () => {
-		switchMode()
-		window.dispatchEvent(new Event('setInitialDashboard'))
-	}
-	const toolbar = (!dashboardOwner || !isLoaded) ? null : <div className="topBarWrap">
+	return <div className="topBarWrap">
 		<div className="topBar">
-			{!showSideBar && <i 
-				className="gallery__toggle fas fa-angle-double-right" 
-				onClick={()=>toggleSideBar(!showSideBar)}
-			/>}
-			{dashboardOwner && !(!currentQuery.id || !currentQuery.saved) && currentQuery.layout 
-				&& <button type="button" className="topBar__button" onClick={switchMode}>Edit</button>}
-			{(!currentQuery.id || !currentQuery.saved) && <button 
-				className="topBar__button" 
-				onClick={saveHandle}
-				disabled={currentQuery.saved}
-			>
-				Save
-			</button>}
-			{!currentQuery.saved && currentQuery.layout && <button type="button" className="topBar__button" onClick={cancelHandle}>Cancel</button>}
-			{dashboardOwner && currentQuery.layout &&
-				<div 
-					className="grid-stack-item droppable-element"
-					draggable={true}
-					unselectable="on"
-					style={{border: '1px dashed #c0c0c0', padding: '3px'}}
-					onDragStart={e => e.dataTransfer.setData("text/plain", "block.content")}
-				>Text Block</div>}
-			{dashboardOwner && (!currentQuery.id || !currentQuery.saved) && currentQuery.layout 
-				&& <button type="button" className="topBar__button" onClick={openDashboardSettings}>Settings</button>}
+
 			{!currentQuery.layout && <button className="topBar__button"
-				onClick={prettifyQuery}
+											 onClick={prettifyQuery}
 			>
 				Prettify
 			</button>}
-			{!currentQuery.layout && <input 
+			{!currentQuery.layout && <input
 				className="endpointURL"
-				type="text" 
+				type="text"
 				value={currentQuery.endpoint_url}
 				onChange={handleInputURLChange}
 			/>}
-			{!docExplorerOpen ? currentQuery.layout ? <></> : 
-			<button
-				className="docExplorerShow"
-				onClick={() => toggleDocExplorer(prev => !prev)}
-				aria-label="Open Documentation Explorer">
-				Docs
-			</button> : currentQuery.layout ? <></> :
-			<div className="doc-explorer-title-bar">
-				<div className="doc-explorer-title">
-					Documentation Explorer
-				</div>
-				<div className="doc-explorer-rhs">
-					<button 
-						className="docExplorerHide" 
-						aria-label="Close Documentation Explorer"
-						onClick={() => toggleDocExplorer(prev => !prev)}
-					>
-						{'\u2715'}
-					</button>
-				</div>
-			</div>}
+			{!docExplorerOpen ? currentQuery.layout ? <></> :
+				<button
+					className="docExplorerShow"
+					onClick={() => toggleDocExplorer(prev => !prev)}
+					aria-label="Open Documentation Explorer">
+					Docs
+				</button> : currentQuery.layout ? <></> :
+				<div className="doc-explorer-title-bar">
+					<div className="doc-explorer-title">
+						Documentation Explorer
+					</div>
+					<div className="doc-explorer-rhs">
+						<button
+							className="docExplorerHide"
+							aria-label="Close Documentation Explorer"
+							onClick={() => toggleDocExplorer(prev => !prev)}
+						>
+							{'\u2715'}
+						</button>
+					</div>
+				</div>}
 		</div>
 	</div>
-	return toolbar
 })
 
 export default ToolbarComponent

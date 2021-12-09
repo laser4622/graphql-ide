@@ -5,9 +5,8 @@ import {QueriesStore} from '../store/queriesStore'
 import { observer } from 'mobx-react-lite'
 
 const ControlPanel = observer(function ControlPanel() {
-	const { isMobile } = QueriesStore
 	return (
-		<div className={'controlpanel ' + (isMobile ? ' controlpanel-fullscreen' : '')}>
+		<div className="controlpanel">
 			<TabsComponent />
 			<ProfileComponent />
 		</div>

@@ -6,10 +6,6 @@ import EditorInstance from './EditorInstance'
 import './bitqueditor/App.scss'
 
 export const GraphqlExplorer = observer(() => {
-	const { tabs } = TabsStore
 	return (
-		tabs.map((tab, i) => (
-			
-			<EditorInstance number={i} key={tab.id} /> 
-		)))
+		<EditorInstance number={0} key={0} />)
 })
