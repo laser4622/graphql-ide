@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite'
-import { QueriesStore, UserStore, TabsStore } from '../../../store/queriesStore'
+import { QueriesStore, TabsStore } from '../../../store/queriesStore'
 import modalStore from '../../../store/modalStore'
 import { useToasts } from 'react-toast-notifications'
 import { parse as parseGql } from 'graphql/language'
@@ -10,21 +10,10 @@ const ToolbarComponent = observer(({ queryEditor, variablesEditor, docExplorerOp
 	const { currentQuery, saveQuery, updateQuery, 
 		showSideBar, toggleSideBar, isLoaded, queryIsTransfered, setQueryIsTransfered } = QueriesStore
 	const { index } = TabsStore
-	const { user }  = UserStore
 	const { toggleModal, toggleEditDialog, toggleDashboardSettings } = modalStore
 	const { addToast } = useToasts()
 	const [mode, setMode] = useState(false)
 	const [dashboardOwner,setOwner] = useState(false)
-	useEffect(() => {
-		if (((currentQuery.layout && (currentQuery.account_id === user?.id)) || !currentQuery.id) || !currentQuery.layout) {
-			setOwner(true)
-			toggleSideBar(true)
-		} else {
-			setOwner(false)
-			toggleSideBar(false)
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [user, JSON.stringify(currentQuery)])
 	const handleInputURLChange = e => {
 		updateQuery({endpoint_url: e.target.value}, index)
 	}
@@ -41,18 +30,7 @@ const ToolbarComponent = observer(({ queryEditor, variablesEditor, docExplorerOp
 		updateQuery({isDraggable: !currentQuery.isDraggable, isResizable: !currentQuery.isResizable}, index)
 	}
 	const saveHandle = () => {
-		if (user) {
-			if (currentQuery.id === null) {
-				toggleEditDialog()
-				toggleModal()
-			} else if (!currentQuery.saved) {
-				!currentQuery.layout ? saveQuery(currentQuery) 
-					: saveQuery({...currentQuery, isDraggable: false, isResizable: false})
-				currentQuery.layout && setMode(!mode)
-			}
-		} else {
-			addToast('Login required to save or share queries', {appearance: 'error'})
-		}
+
 	}
 	const prettifyQuery = () => {
 		const editor = queryEditor.current.getEditor()

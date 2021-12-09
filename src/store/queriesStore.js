@@ -102,7 +102,6 @@ class Queries {
 	get queryParams() {
 		return {
 			id: this.currentQuery.id,
-			account_id: UserStore.user && (UserStore.user.id || null),
 			query: this.currentQuery.query,
 			arguments: this.currentQuery.variables,
 			config: this.currentQuery.config,
@@ -211,7 +210,7 @@ class Queries {
 				})
 				: await setDashboard(params)
 			let id = TabsStore.tabs.map(tab => tab.id).indexOf(TabsStore.currentTab)
-			this.updateQuery({...params, account_id: UserStore.user.id}, id, data.id)
+			this.updateQuery({...params}, id, data.id)
 			console.log(data)
 			this.queryJustSaved = !this.queryJustSaved
 			this.query[id].saved = true
@@ -335,5 +334,4 @@ class Tabs {
 }
 
 export let TabsStore = new Tabs()
-export let UserStore = new User()
 export let QueriesStore = new Queries()

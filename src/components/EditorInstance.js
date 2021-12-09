@@ -4,7 +4,6 @@ import { toJS } from 'mobx'
 import ReactTooltip from 'react-tooltip'
 import PlayIcon from './icons/PlayIcon.js'
 import ErrorIcon from './icons/ErrorIcon.js'
-import { generateLink } from '../utils/common'
 import { vegaPlugins } from 'vega-widgets'
 import { tablePlugin } from 'table-widget'
 import { graphPlugins } from '@bitquery/ide-graph'
@@ -21,26 +20,19 @@ import { visit } from 'graphql/language/visitor'
 import { parse as parseGql } from 'graphql/language'
 import JsonPlugin from './bitqueditor/components/JsonWidget'
 import ToolbarComponent from './bitqueditor/components/ToolbarComponent'
-import { TabsStore, QueriesStore, UserStore } from '../store/queriesStore'
-import WidgetEditorControls from './bitqueditor/components/WidgetEditorControls'
+import { TabsStore, QueriesStore } from '../store/queriesStore'
 import QueryErrorIndicator from './QueryErrorIndicator'
 import { getValueFrom, getLeft, getTop } from '../utils/common'
 import "react-loader-spinner/dist/loader/css/react-spinner-loader.css"
 import Loader from "react-loader-spinner"
 import { DocExplorer } from './DocExplorer'
-import { FullScreen, useFullScreenHandle } from "react-full-screen"
-import FullscreenIcon from './icons/FullscreenIcon'
 import { getIntrospectionQuery, buildClientSchema } from 'graphql'
 import useDebounce from '../utils/useDebounce'
-import WidgetView from './bitqueditor/components/WidgetView'
-import { getCheckoutCode } from '../api/api'
 import { flattenData } from './flattenData.js'
-import { stringifyIncludesFunction } from '../utils/common';
 
 
 const EditorInstance = observer(function EditorInstance({number})  {
 	const { tabs, currentTab, index, jsonMode, codeMode } = TabsStore
-	const { user }  = UserStore
 	const { query, updateQuery, currentQuery, isMobile,
 		setMobile, showSideBar, schema, setSchema, isLoaded } = QueriesStore
 	const [docExplorerOpen, toggleDocExplorer] = useState(false)
@@ -50,7 +42,6 @@ const EditorInstance = observer(function EditorInstance({number})  {
 	const [queryTypes, setQueryTypes] = useState('')
 	const [dataSource, setDataSource] = useState({})
 	const [accordance, setAccordance] = useState(true)
-	const [checkoutCode, setCheckOutCode] = useState('')
 	const debouncedURL = useDebounce(currentQuery.endpoint_url, 500)
 	const workspace = useRef(null)
 	const overwrap = useRef(null)
@@ -244,7 +235,6 @@ const EditorInstance = observer(function EditorInstance({number})  {
 		}
 
 		let temp = currentQuery.variables !== '{}'
-		debugger
 		fetcher({query: currentQuery.query, variables: temp?currentQuery.variables:null}).then(data => {
 			data.json().then(json => {
 				let values = null
@@ -305,25 +295,11 @@ const EditorInstance = observer(function EditorInstance({number})  {
 					&& setQueryTypes(queryType)
 			}
 		}
-		if (user && query[index].account_id === user.id ) {
-			updateQuery(handleSubject, index)
-		} else {
-			updateQuery({...handleSubject, url: null}, index, null)
-		}
+		updateQuery({...handleSubject, url: null}, index, null)
 		setAccordance(false)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [user, schema, queryTypes, index])
-	const setConfig = (config) => {
-		if (number === index) {
-			if (JSON.stringify(currentQuery.config) !== JSON.stringify(config, stringifyIncludesFunction)) {
-				console.log(config)
-				updateQuery({config}, index)
-				console.log('setconfig')
-			}
-		}
-	}
+	}, [schema, queryTypes, index])
 	const fetcher = (graphQLParams) => {
-		debugger
 
 		return fetch(
 			`http://localhost:8010?url=${encodeURI(currentQuery.endpoint_url)}`,
@@ -370,32 +346,7 @@ const EditorInstance = observer(function EditorInstance({number})  {
 			fetchSchema() 
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [debouncedURL, user])
-	
-	const fullscreenHandle = useFullScreenHandle()
-
-	const getCode = useCallback( async () => {
-		let { data } = WidgetComponent.source && await getCheckoutCode(WidgetComponent.source)
-		if (WidgetComponent.id === 'tradingview.widget') {
-			data = data.replace('createChart', 'LightweightCharts.createChart')
-		}
-		const id = generateLink(true)
-		let renderFunc = WidgetComponent.source ? data.match(/function(.*?)\(/)[1].trim() : WidgetComponent.rendererName
-		let dependencies = WidgetComponent.dependencies.map(dep => `<script src="${dep}"></script>`).join('\n')
-		return `
-${dependencies}
-${WidgetComponent.id === 'table.widget' ? '<link href="https://unpkg.com/tabulator-tables@4.9.3/dist/css/tabulator.min.css" rel="stylesheet">' : ''} 
-<script src="https://cdn.jsdelivr.net/gh/bitquery/widgets-runtime@v1.0/dataSource.js"></script>
-<div style="width: 500px; height: 500px; overflow-y: hidden;" id="${id}"></div>
-<script>
-	let ds = new dataSourceWidget(\`${currentQuery.query}\`, ${currentQuery.variables}, \`${currentQuery.displayed_data}\`, '${user.key}')
-	${data ? data : ''}
-	const config = ${JSON.stringify(currentQuery.config)}
-	${renderFunc}(ds, config, '${id}')
-</script>
-		`
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [WidgetComponent.id, JSON.stringify(currentQuery), user])
+	}, [debouncedURL])
 
 	return (
 		<div 
@@ -441,7 +392,7 @@ ${WidgetComponent.id === 'table.widget' ? '<link href="https://unpkg.com/tabulat
 						ref={workspace} 
 						onMouseDown={workspaceResizer}
 				>
-					{!currentQuery.layout && <GraphqlEditor 
+					<GraphqlEditor
 						schema={schema}
 						query={query[number].query}
 						number={number}
@@ -454,63 +405,28 @@ ${WidgetComponent.id === 'table.widget' ? '<link href="https://unpkg.com/tabulat
 							ref1: queryEditor,
 							ref2: variablesEditor
 						}}
-					/>}
-					<div className="workspace__sizechanger"/>
-					<WidgetEditorControls 
-						model={queryTypes}
-						dataSource={dataSource}
-						setDataSource={setDataSource}
-						name={WidgetComponent.name}
-						plugins={plugins}
-						number={number}
 					/>
-					{(currentQuery.displayed_data && isLoaded) ? <WidgetComponent.editor 
-						model={queryTypes}
-						displayedData={toJS(query[index].displayed_data)}
-						config={toJS(query[index].config)}
-						setConfig={setConfig} 
-					/> : <div className="widget" /> }
 				</div>
 				<div className={'widget-display widget-display-wrapper'+
-					(isMobile ? ' widget-display-wrapper-fullscreen' : '')} 
+					(isMobile ? ' widget-display-wrapper-fullscreen' : '')}
 					ref={widgetDisplay}
 				>
-					<div 
-						className="sizeChanger" 
+					<div
+						className="sizeChanger"
 						onMouseDown={handleResizer}
 					>
 					</div>
 					<div className="flex-col w-100">
-						<QueryErrorIndicator 
+						<QueryErrorIndicator
 							error={dataSource.error}
 							removeError={setDataSource}
 						/>
-						{currentQuery.widget_id==='json.widget' || jsonMode || codeMode ? 
-							<JsonPlugin.renderer
-								code={checkoutCode}
-								getCode={getCode}
-								mode={jsonMode ? 'json' : codeMode ? 'code' : ''}
-								dataSource={dataSource} 
-								displayedData={toJS(currentQuery.displayed_data)}
-								config={toJS(query[index].config)} 
-							/> : 
-							<FullScreen className="widget-display" handle={fullscreenHandle}>
-							<WidgetView 
-								renderFunc={WidgetComponent.renderer}
-								dataSource={dataSource} 
-								displayedData={toJS(currentQuery.displayed_data)}
-								config={toJS(query[index].config)} 
-								el={currentTab === tabs[number].id ? `asd${currentTab}` : 'x'} 
-							>
-								<FullscreenIcon onClick={
-									isMobile ? ()=>setMobile(false) :
-									fullscreenHandle.active 
-									? fullscreenHandle.exit 
-									: fullscreenHandle.enter} 
-								/>
-							</WidgetView>
-						</FullScreen>
-							}
+						<JsonPlugin.renderer
+							mode={jsonMode ? 'json' : codeMode ? 'code' : ''}
+							dataSource={dataSource}
+							displayedData={toJS(currentQuery.displayed_data)}
+							config={toJS(query[index].config)}
+						/>
 					</div>
 				</div>
 				{docExplorerOpen && <DocExplorer schema={schema} />}
